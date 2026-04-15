@@ -326,7 +326,8 @@ code {
 .compare-list,
 .log-list,
 .check-list,
-.target-list {
+.target-list,
+.snippet-header {
   display: grid;
   gap: 12px;
 }
@@ -458,7 +459,30 @@ code {
   color: var(--muted);
 }
 
-@media (max-width: 1180px) {
+.snippet-card {
+  margin-top: 14px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(24, 35, 29, 0.08);
+  background: #f8f5ed;
+  overflow-x: auto;
+}
+
+.snippet-card pre {
+  margin: 0;
+}
+
+.snippet-card code {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  white-space: pre;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+@media (max-width: 980px) {
   .topbar {
     grid-template-columns: 1fr;
     justify-items: start;
@@ -476,7 +500,6 @@ code {
   .wizard-header,
   .panel-header,
   .section-header,
-  .environment-row,
   .secret-row,
   .log-row,
   .check-row,

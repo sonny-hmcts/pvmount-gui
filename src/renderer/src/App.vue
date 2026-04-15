@@ -379,6 +379,18 @@
         </section>
 
         <section class="panel">
+          <div class="snippet-header">
+            <div>
+              <h2>Docker Mount Example</h2>
+              <p class="panel-copy">Use the mounted secrets path as a read-only bind mount inside a container.</p>
+            </div>
+          </div>
+          <div class="snippet-card">
+            <pre><code>{{ dockerMountExample }}</code></pre>
+          </div>
+        </section>
+
+        <section class="panel">
           <h2>Activity</h2>
           <div class="log-list">
             <div v-for="log in dashboard?.logs ?? []" :key="`${log.at}-${log.message}`" class="log-row">
@@ -518,6 +530,18 @@ const comparisonOptions = computed(() => {
 });
 
 const compareTargetLabel = computed(() => comparisonOptions.value.find((item) => item.key === compareTargetKey.value)?.label ?? '');
+
+const dockerMountExample = computed(() => {
+  const applicationPath = diagnostics.value?.expectedApplicationPath ?? '/mnt/secrets';
+  const activeNamespaces = Object.keys(diagnostics.value?.activeTargets ?? {});
+  const exampleNamespace = activeNamespaces[0] ?? 'your-namespace';
+
+  return [
+    `docker run --rm \\`,
+    `  -v ${applicationPath}/${exampleNamespace}:/app/secrets:ro \\`,
+    `  alpine:3.20 ls -la /app/secrets`
+  ].join('\n');
+});
 
 const browserRows = computed(() => {
   const compareSet = new Set(compareTargetSecrets.value.filter((item) => item.presentInTarget).map((item) => item.name));

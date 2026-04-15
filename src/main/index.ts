@@ -353,8 +353,8 @@ async function pathExists(targetPath: string): Promise<boolean> {
 function createWindow(): void {
   const preloadPath = path.join(__dirname, '../preload/index.js');
   const window = new BrowserWindow({
-    width: 1440,
-    height: 960,
+    width: 1120,
+    height: 760,
     minWidth: 1120,
     minHeight: 760,
     title: 'PVMount GUI',
