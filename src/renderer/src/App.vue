@@ -13,7 +13,7 @@
         </nav>
         <div class="topbar-actions">
           <button class="button" :disabled="busy" @click="reloadAll">Refresh</button>
-          <button class="button button-primary" :disabled="busy" @click="confirmAndRepairMount">Repair Mount</button>
+          <button class="button button-primary" :disabled="busy || diagnostics?.isReady" @click="confirmAndRepairMount">Repair Mount</button>
         </div>
       </header>
 
