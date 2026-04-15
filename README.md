@@ -1,8 +1,20 @@
+<p align="center">
+  <img src="build/icon.png" alt="PVMount GUI icon" width="120" />
+</p>
+
 # PVMount GUI
 
 PVMount GUI is a new macOS-first desktop application that preserves the existing `pvmount` filesystem contract while replacing the original one-shot CLI workflow with a safer local cache, clone support, diagnostics, and a typed desktop UX.
 
 This project does not modify the existing CLI repo. The CLI at [pvmount-tool](https://github.com/sonny-hmcts/pvmount-tool) was used only as behavioral reference.
+
+## What It Does
+
+- Syncs Azure Key Vault environments into a local cache
+- Keeps `/mnt/secrets/<namespace>` stable for existing local tooling
+- Lets you activate a base environment or a local clone per namespace
+- Supports local-only clones for safe secret editing and comparison
+- Includes setup checks, diagnostics, activity logs, and Docker mount examples
 
 ## Design Decisions
 
@@ -24,7 +36,7 @@ This is safer than per-file symlinks, avoids re-downloading on every environment
 Managed data lives under the Electron user data root:
 
 ```text
-~/Library/Application Support/PVMount GUI/
+~/Library/Application Support/pvmount-gui/
   data/
     namespaces/
       <namespace>/
@@ -134,6 +146,12 @@ This scaffold uses `electron-builder` and is configured for:
 - `.dmg`
 - `.pkg`
 
+GitHub Actions packaging is available via:
+
+- `.github/workflows/release-macos.yml`
+
+Current release automation is set up to publish the macOS `.pkg` artifact on version tags such as `v0.1.0`.
+
 Recommendation:
 
 - Use `.dmg` for the normal developer distribution path.
@@ -149,6 +167,23 @@ For notarizable distribution, you should add:
 - Apple Developer ID signing configuration
 - notarization environment variables and `@electron/notarize`
 - if a privileged helper is introduced, a proper signed helper installation path rather than ad hoc elevation
+
+### Build Locally
+
+```bash
+npm run package
+```
+
+### Create A Release Build In GitHub Actions
+
+Push a version tag:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The workflow will build and attach the macOS installer package to a GitHub Release.
 
 ## First-Pass macOS Assumptions
 
