@@ -1,6 +1,5 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { app, BrowserWindow, Menu, nativeImage, shell, type MenuItemConstructorOptions } from 'electron';
 import { AppController } from './services/app-controller.js';
 import { AzureKeyVaultSyncService } from './services/azure-key-vault-sync-service.js';
@@ -149,7 +148,8 @@ async function showAboutWindow(): Promise<void> {
 
   const parentWindow = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0];
   const aboutIconPath = path.join(app.getAppPath(), 'build/icon.png');
-  const iconUrl = pathToFileURL(aboutIconPath).toString();
+  const aboutIcon = nativeImage.createFromPath(aboutIconPath);
+  const iconUrl = aboutIcon.isEmpty() ? '' : aboutIcon.toDataURL();
   const html = `<!DOCTYPE html>
 <html lang="en">
   <head>
