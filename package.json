@@ -16,7 +16,7 @@
     "build:main": "tsc -p tsconfig.main.json",
     "preview": "vite preview",
     "test": "vitest run",
-    "package": "npm run build && electron-builder --mac dmg pkg",
+    "package": "npm run build && electron-builder --mac dmg pkg --publish never",
     "package:dir": "npm run build && electron-builder --dir"
   },
   "build": {
