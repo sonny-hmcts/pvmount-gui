@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-electron
+dist-electron-builder
+dist-electron-builder-mac
+dist-electron-builder-linux
+dist-electron-builder-win
+dist-electron-builder-mac-arm64
+dist-electron-builder-mac-x64
+dist-electron-builder-linux-x64
+dist-electron-builder-linux-arm64
+dist-electron-builder-win-x64  
