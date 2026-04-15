@@ -2,7 +2,7 @@
 
 PVMount GUI is a new macOS-first desktop application that preserves the existing `pvmount` filesystem contract while replacing the original one-shot CLI workflow with a safer local cache, clone support, diagnostics, and a typed desktop UX.
 
-This project does not modify the existing CLI repo. The CLI at `/Users/sonny.lloyd/Documents/GitHub/pvmount-tool` was used only as behavioral reference.
+This project does not modify the existing CLI repo. The CLI at [/Users/sonny.lloyd/Documents/GitHub/pvmount-tool](https://github.com/sonny-hmcts/pvmount-tool) was used only as behavioral reference.
 
 ## Design Decisions
 
