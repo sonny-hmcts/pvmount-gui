@@ -4,6 +4,7 @@ import path from 'node:path';
 
 export default defineConfig({
   root: path.resolve(__dirname, 'src/renderer'),
+  base: './',
   plugins: [vue()],
   server: {
     host: '127.0.0.1',

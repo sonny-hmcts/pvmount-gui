@@ -73,7 +73,6 @@ function setDevelopmentDockIcon(): void {
 }
 
 function setApplicationMenu(paths: { dataRoot: string; logsRoot: string }): void {
-  const isDevelopment = Boolean(process.env.VITE_DEV_SERVER_URL);
   const template: MenuItemConstructorOptions[] = [
     {
       label: app.name,
@@ -114,16 +113,12 @@ function setApplicationMenu(paths: { dataRoot: string; logsRoot: string }): void
             void shell.openPath(paths.logsRoot);
           }
         },
-        ...(isDevelopment
-          ? [
-              { type: 'separator' as const },
-              {
-                label: 'Toggle Developer Tools',
-                accelerator: 'Alt+Command+I',
-                click: () => BrowserWindow.getFocusedWindow()?.webContents.toggleDevTools()
-              }
-            ]
-          : [])
+        { type: 'separator' },
+        {
+          label: 'Toggle Developer Tools',
+          accelerator: 'Alt+Command+I',
+          click: () => BrowserWindow.getFocusedWindow()?.webContents.toggleDevTools()
+        }
       ]
     },
     {
