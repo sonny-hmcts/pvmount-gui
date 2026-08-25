@@ -34,20 +34,12 @@ pipeline {
 		stage('Build macOS application and packages') {
 			steps {
 				withCredentials([
-					// Developer ID Application is required for application signature
-					certificate(
-						credentialsId: 'e7110adb-442a-4fed-a3c7-a0701a748c7d',
-						keystoreVariable: 'KEYSTORE_DIR',
-						passwordVariable: 'KEYSTORE_PASSWORD',
-						aliasVariable: 'KEYSTORE_ALIAS'
-					),
-					// Developer ID Installer is required for package signature
-					certificate(
-						credentialsId: '7ef48e68-0fd5-40c7-879a-763f52492ef7',
-						keystoreVariable: 'INSTALLER_KEYSTORE_DIR',
-						passwordVariable: 'INSTALLER_KEYSTORE_PASSWORD',
-						aliasVariable: 'INSTALLER_KEYSTORE_ALIAS'
-					),
+					// Keychain password
+					usernamePassword(
+						credentialsId: '7c8093cc-49a7-46af-b9bc-67af3e439099',
+						usernameVariable: 'KEYCHAIN_USER',
+						passwordVariable: 'KEYCHAIN_PASSWORD'
+					 ),
 					// Application Specific Password is required for Apple notarization
 					usernamePassword(
 						credentialsId: 'ff0682c4-6f38-42dc-86b2-1a1d67487a2a',
@@ -56,25 +48,22 @@ pipeline {
 					)
 				]) {
 					script {
-						env.CSC_LINK = "./${env.KEYSTORE_ALIAS}.p12"
-						env.CSC_INSTALLER_LINK = "./${env.INSTALLER_KEYSTORE_ALIAS}.p12"
-
 						def envFileContent = """
 APPLE_ID="${env.APPLE_ID}"
 APPLE_APP_SPECIFIC_PASSWORD="${env.APPLE_APP_SPECIFIC_PASSWORD}"
 APPLE_TEAM_ID="${env.APPLE_TEAM_ID}"
-CSC_LINK="${env.CSC_LINK}"
-CSC_KEY_PASSWORD="${env.KEYSTORE_PASSWORD}"
-CSC_INSTALLER_LINK="${env.CSC_INSTALLER_LINK}"
-CSC_INSTALLER_KEY_PASSWORD="${env.INSTALLER_KEYSTORE_PASSWORD}"
+CSC_NAME="${env.APPLICATION_CERTIFICATE_NAME}"
+CSC_INSTALLER_NAME="${env.INSTALLER_CERTIFICATE_NAME}"
 """
 						// Create required Electron environment file
 						writeFile file: "electron-builder.env", text: envFileContent
 					}
 					sh '''
-						# Copy required PKCS12 files
-						cp "${KEYSTORE_DIR}" "./${KEYSTORE_ALIAS}.p12"
-						cp "${INSTALLER_KEYSTORE_DIR}" "./${INSTALLER_KEYSTORE_ALIAS}.p12"
+						KEYCHAIN_PATH="${HOME}/Library/Keychains/login.keychain-db"
+						# Unlock default keychain with a timeout of 1 hour
+						security unlock-keychain -p "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
+						security set-keychain-settings -t 3600 -u "${KEYCHAIN_PATH}"
+						security default-keychain -s "${KEYCHAIN_PATH}"
 
 						# Application build and archive
 						npm run build
