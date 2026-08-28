@@ -1,3 +1,4 @@
+import { mkdirSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { app, BrowserWindow, Menu, nativeImage, shell, type MenuItemConstructorOptions } from 'electron';
@@ -14,10 +15,13 @@ import { LinuxMountService } from './platforms/linux/linux-mount-service.js';
 const APP_DESCRIPTION = 'Local macOS-first GUI for syncing Azure Key Vault secrets into the pvmount workspace contract.';
 const APP_REPOSITORY_URL = 'https://github.com/sonny-hmcts/pvmount-gui';
 const USER_DATA_FOLDER_NAME = 'pvmount-gui';
+const DEVELOPMENT_SESSION_DATA_FOLDER_NAME = 'pvmount-gui-dev-session';
+const OPEN_DEVTOOLS_ENV = 'PVMOUNT_OPEN_DEVTOOLS';
 let aboutWindow: BrowserWindow | null = null;
 
 async function bootstrap(): Promise<void> {
   app.setName('PVMount GUI');
+  configureDevelopmentSessionDataPath();
   await app.whenReady();
   await configureUserDataPath();
   setDevelopmentDockIcon();
@@ -363,7 +367,9 @@ function createWindow(): void {
   const devServerUrl = process.env.VITE_DEV_SERVER_URL;
   if (devServerUrl) {
     void window.loadURL(devServerUrl);
-    window.webContents.openDevTools({ mode: 'detach' });
+    if (process.env[OPEN_DEVTOOLS_ENV] === '1') {
+      window.webContents.openDevTools({ mode: 'detach' });
+    }
     return;
   }
 
@@ -371,3 +377,13 @@ function createWindow(): void {
 }
 
 void bootstrap();
+
+function configureDevelopmentSessionDataPath(): void {
+  if (!process.env.VITE_DEV_SERVER_URL) {
+    return;
+  }
+
+  const sessionDataPath = path.join(app.getPath('appData'), DEVELOPMENT_SESSION_DATA_FOLDER_NAME);
+  mkdirSync(sessionDataPath, { recursive: true });
+  app.setPath('sessionData', sessionDataPath);
+}

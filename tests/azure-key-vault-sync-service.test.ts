@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildAzureCliEnvironment,
   buildExecutableSearchPath,
+  isAzureCliForcedUnavailable,
   parseVaultName
 } from '../src/main/services/azure-key-vault-sync-service.js';
 
@@ -76,5 +77,19 @@ describe('Azure CLI environment', () => {
 
     expect(searchPath.filter((entry) => entry === '/opt/homebrew/bin')).toHaveLength(1);
     expect(searchPath[0]).toBe('/opt/homebrew/bin');
+  });
+
+  it('allows Azure CLI detection to be forced off only for dev and test runs', () => {
+    expect(isAzureCliForcedUnavailable({
+      PVMOUNT_FORCE_AZ_UNAVAILABLE: '1',
+      VITE_DEV_SERVER_URL: 'http://127.0.0.1:5173'
+    })).toBe(true);
+    expect(isAzureCliForcedUnavailable({
+      PVMOUNT_FORCE_AZ_UNAVAILABLE: '1',
+      NODE_ENV: 'test'
+    })).toBe(true);
+    expect(isAzureCliForcedUnavailable({
+      PVMOUNT_FORCE_AZ_UNAVAILABLE: '1'
+    })).toBe(false);
   });
 });
