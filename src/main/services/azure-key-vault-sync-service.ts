@@ -13,6 +13,7 @@ import type { SecretSyncService, SyncResult, SyncedSecret } from './contracts.js
 const execFileAsync = promisify(execFile);
 const AZ_COMMAND = 'az';
 const AZ_PATH_OVERRIDE_ENV = 'PVMOUNT_AZ_PATH';
+const AZ_FORCE_UNAVAILABLE_ENV = 'PVMOUNT_FORCE_AZ_UNAVAILABLE';
 const SHELL_DISCOVERY_TIMEOUT_MS = 5000;
 
 const COMMON_EXECUTABLE_DIRECTORIES = {
@@ -186,6 +187,11 @@ export class AzureKeyVaultSyncService implements SecretSyncService {
   }
 
   private async resolveAzureCliCommandOnce(): Promise<string | null> {
+    if (isAzureCliForcedUnavailable(this.cliEnv)) {
+      applyAzureCliEnvironment(this.cliEnv);
+      return null;
+    }
+
     const overriddenCommand = resolveConfiguredAzPath(this.cliEnv);
     if (overriddenCommand && await isWorkingAzCommand(overriddenCommand, this.cliEnv)) {
       prependExecutableDirectory(this.cliEnv, overriddenCommand);
@@ -225,6 +231,10 @@ export function buildAzureCliEnvironment(input: AzureCliEnvironmentInput = {}): 
     ...sourceEnv,
     PATH: pathValue
   };
+}
+
+export function isAzureCliForcedUnavailable(env: NodeJS.ProcessEnv): boolean {
+  return env[AZ_FORCE_UNAVAILABLE_ENV] === '1' && (env.NODE_ENV === 'test' || Boolean(env.VITE_DEV_SERVER_URL));
 }
 
 export function buildExecutableSearchPath(input: {

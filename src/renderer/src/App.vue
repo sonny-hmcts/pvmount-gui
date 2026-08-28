@@ -38,6 +38,13 @@
 
     <section class="workspace">
       <p v-if="error" class="error-banner">{{ error }}</p>
+      <div v-if="showSetupRequiredBanner" class="setup-banner">
+        <div>
+          <strong>Setup required before syncing secrets</strong>
+          <p>{{ setupRequiredMessage }}</p>
+        </div>
+        <button class="button" :disabled="busy" @click="currentPage = 'setup'">Review Setup</button>
+      </div>
 
       <template v-if="currentPage === 'namespaces'">
         <template v-if="namespaceView === 'list'">
@@ -325,6 +332,11 @@
               <div>
                 <strong>{{ check.label }}</strong>
                 <p>{{ check.detail }}</p>
+                <div v-if="!check.ok && setupCheckDetail(check.key)" class="check-detail-box">
+                  <strong>{{ setupCheckDetail(check.key)?.title }}</strong>
+                  <p>{{ setupCheckDetail(check.key)?.body }}</p>
+                  <code>{{ setupCheckDetail(check.key)?.command }}</code>
+                </div>
               </div>
               <StatusPill :label="check.ok ? 'OK' : check.action ?? 'Needs action'" :tone="check.ok ? 'good' : 'warn'" />
             </div>
@@ -409,11 +421,13 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import type { AzureSubscription, DiscoveredNamespace, SecretItem } from '@shared/types.js';
+import type { AzureSubscription, DiscoveredNamespace, SecretItem, SetupCheck } from '@shared/types.js';
 import StatusPill from './components/StatusPill.vue';
 import { useAppState } from './composables/use-app-state';
 
 const { dashboard, diagnostics, selectedNamespace, selectedOverview, selectedTarget, secrets, busy, error, loadDashboard, refreshSecrets, runAction } = useAppState();
+
+const AZURE_SETUP_CHECK_KEYS = new Set(['azure-cli', 'azure-login']);
 
 const currentPage = ref<'namespaces' | 'setup' | 'diagnostics'>('namespaces');
 const namespaceView = ref<'list' | 'detail' | 'browser'>('list');
@@ -488,6 +502,29 @@ const discoveredEnvironmentOptions = computed(() =>
 const namespaceDiscoveryOptions = computed(() =>
   discoveredNamespaces.value.find((item) => item.namespace === selectedNamespace.value)?.environments ?? []
 );
+
+const requiredSetupFailures = computed(() => dashboard.value?.setup.checks.filter((check) => !check.ok) ?? []);
+
+const azureSetupFailures = computed(() => requiredSetupFailures.value.filter(isAzureSetupCheck));
+
+const azureSetupReady = computed(() => {
+  const checks = dashboard.value?.setup.checks ?? [];
+  return [...AZURE_SETUP_CHECK_KEYS].every((key) => checks.find((check) => check.key === key)?.ok === true);
+});
+
+const showSetupRequiredBanner = computed(() => currentPage.value !== 'setup' && requiredSetupFailures.value.length > 0);
+
+const setupRequiredMessage = computed(() => {
+  const labels = requiredSetupFailures.value.map((check) => check.label);
+  if (labels.length === 0) {
+    return '';
+  }
+
+  const joinedLabels = labels.join(', ');
+  return labels.length === 1
+    ? `${joinedLabels} needs attention before syncing or activation.`
+    : `${joinedLabels} need attention before syncing or activation.`;
+});
 
 const cloneNamePreview = computed(() => {
   if (!cloneSourceEnvironment.value) {
@@ -587,7 +624,6 @@ const browserRows = computed(() => {
 
 onMounted(() => {
   void reloadAll();
-  void loadSubscriptions();
 });
 
 watch(selectedTarget, () => {
@@ -620,6 +656,10 @@ async function reloadAll(): Promise<void> {
       secrets.value = [];
     }
   });
+  applySetupGuidance({ redirect: true });
+  if (azureSetupReady.value) {
+    await loadSubscriptions();
+  }
 }
 
 async function loadComparisonSecrets(): Promise<void> {
@@ -703,6 +743,10 @@ async function confirmAndRepairMount(): Promise<void> {
 }
 
 async function loadSubscriptions(): Promise<void> {
+  if (!requireAzureSetupReady()) {
+    return;
+  }
+
   await runAction(async () => {
     if (!window.pvmount) {
       throw new Error('Electron preload API is unavailable. Restart the desktop app.');
@@ -715,6 +759,10 @@ async function loadSubscriptions(): Promise<void> {
 }
 
 async function loadDiscoveredNamespaces(): Promise<void> {
+  if (!requireAzureSetupReady()) {
+    return;
+  }
+
   await runAction(async () => {
     if (!window.pvmount) {
       throw new Error('Electron preload API is unavailable. Restart the desktop app.');
@@ -727,6 +775,10 @@ async function loadDiscoveredNamespaces(): Promise<void> {
 }
 
 async function syncEnvironment(namespace: string, environment: string, vaultName?: string): Promise<void> {
+  if (!requireAzureSetupReady()) {
+    return;
+  }
+
   await runAction(async () => {
     if (!window.pvmount) {
       throw new Error('Electron preload API is unavailable. Restart the desktop app.');
@@ -737,6 +789,10 @@ async function syncEnvironment(namespace: string, environment: string, vaultName
 }
 
 async function addDiscoveredEnvironment(): Promise<void> {
+  if (!requireAzureSetupReady()) {
+    return;
+  }
+
   const discoveredEnvironment = discoveredEnvironmentOptions.value.find((item) => item.vaultName === discoveredEnvironmentVaultName.value);
   if (!discoveredNamespace.value || !discoveredEnvironment) {
     return;
@@ -759,6 +815,10 @@ async function addDiscoveredEnvironment(): Promise<void> {
 }
 
 async function addEnvironmentFromSelectedNamespace(): Promise<void> {
+  if (!requireAzureSetupReady()) {
+    return;
+  }
+
   const discoveredEnvironment = namespaceDiscoveryOptions.value.find((item) => item.vaultName === discoveredEnvironmentVaultName.value);
   if (!selectedNamespace.value || !discoveredEnvironment) {
     return;
@@ -960,6 +1020,10 @@ async function restoreSecret(secretName: string): Promise<void> {
 }
 
 async function openNamespaceWizard(): Promise<void> {
+  if (!requireAzureSetupReady()) {
+    return;
+  }
+
   showNamespaceWizard.value = !showNamespaceWizard.value;
   if (showNamespaceWizard.value && subscriptions.value.length === 0) {
     await loadSubscriptions();
@@ -967,10 +1031,76 @@ async function openNamespaceWizard(): Promise<void> {
 }
 
 async function openEnvironmentWizard(): Promise<void> {
+  if (!requireAzureSetupReady()) {
+    return;
+  }
+
   showEnvironmentWizard.value = !showEnvironmentWizard.value;
   if (showEnvironmentWizard.value && subscriptions.value.length === 0) {
     await loadSubscriptions();
   }
+}
+
+function applySetupGuidance(input: { redirect: boolean }): void {
+  if (!dashboard.value) {
+    return;
+  }
+
+  if (azureSetupFailures.value.length > 0) {
+    clearAzureDiscoveryState();
+    showNamespaceWizard.value = false;
+    showEnvironmentWizard.value = false;
+  }
+
+  if (input.redirect && requiredSetupFailures.value.length > 0) {
+    currentPage.value = 'setup';
+    namespaceView.value = 'list';
+  }
+}
+
+function requireAzureSetupReady(): boolean {
+  if (azureSetupReady.value) {
+    return true;
+  }
+
+  clearAzureDiscoveryState();
+  showNamespaceWizard.value = false;
+  showEnvironmentWizard.value = false;
+  currentPage.value = 'setup';
+  error.value = '';
+  return false;
+}
+
+function clearAzureDiscoveryState(): void {
+  subscriptions.value = [];
+  selectedSubscriptionId.value = '';
+  discoveredNamespaces.value = [];
+  discoveredNamespace.value = '';
+  discoveredEnvironmentVaultName.value = '';
+}
+
+function isAzureSetupCheck(check: SetupCheck): boolean {
+  return AZURE_SETUP_CHECK_KEYS.has(check.key);
+}
+
+function setupCheckDetail(key: string): { title: string; body: string; command: string } | null {
+  if (key === 'azure-cli') {
+    return {
+      title: 'How this check passes',
+      body: 'The app must be able to run Azure CLI from its own process. On macOS with Homebrew, install Azure CLI, then click Refresh.',
+      command: 'brew install azure-cli'
+    };
+  }
+
+  if (key === 'azure-login') {
+    return {
+      title: 'How this check passes',
+      body: 'The app uses your existing Azure CLI session. Sign in in Terminal, complete the browser prompt, then click Refresh.',
+      command: 'az login'
+    };
+  }
+
+  return null;
 }
 
 function stateTone(state: SecretItem['state']): 'neutral' | 'good' | 'warn' | 'danger' {

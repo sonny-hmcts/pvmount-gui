@@ -40,15 +40,21 @@ export class AppController {
           key: 'azure-cli',
           label: 'Azure CLI installed',
           ok: azureCliAvailable,
-          detail: azureCliAvailable ? 'The az command is available.' : 'Install Azure CLI before syncing secrets.',
+          detail: azureCliAvailable
+            ? 'The az command is available.'
+            : 'Azure CLI is required before syncing Key Vault secrets. Install Azure CLI, then click Refresh.',
           ...(!azureCliAvailable ? { action: 'Install Azure CLI' } : {})
         },
         {
           key: 'azure-login',
           label: 'Azure login state',
           ok: azureLoggedIn,
-          detail: azureLoggedIn ? 'Azure CLI account is authenticated.' : "Run 'az login' in a terminal.",
-          ...(!azureLoggedIn ? { action: 'Run az login' } : {})
+          detail: azureLoggedIn
+            ? 'Azure CLI account is authenticated.'
+            : azureCliAvailable
+              ? "Azure CLI is installed, but no active login was found. Run 'az login' in Terminal, then click Refresh."
+              : 'Azure CLI login cannot be checked until Azure CLI is installed.',
+          ...(!azureLoggedIn && azureCliAvailable ? { action: 'Run az login' } : {})
         },
         ...mountChecks.checks
       ]

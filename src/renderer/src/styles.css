@@ -319,6 +319,29 @@ code {
   justify-content: space-between;
 }
 
+.check-detail-box {
+  display: grid;
+  gap: 8px;
+  max-width: 780px;
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(176, 109, 0, 0.08);
+  border: 1px solid rgba(176, 109, 0, 0.14);
+}
+
+.check-detail-box p {
+  color: var(--muted);
+}
+
+.check-detail-box code {
+  width: fit-content;
+  max-width: 100%;
+  padding: 6px 8px;
+  border-radius: 9px;
+  white-space: normal;
+}
+
 .wizard-grid,
 .namespace-table,
 .environment-list,
@@ -453,6 +476,23 @@ code {
   color: var(--danger);
 }
 
+.setup-banner {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 1px solid rgba(176, 109, 0, 0.18);
+  border-radius: 18px;
+  background: rgba(176, 109, 0, 0.1);
+}
+
+.setup-banner p {
+  margin-top: 4px;
+  color: var(--muted);
+}
+
 .empty-state {
   padding: 28px 14px;
   text-align: center;
@@ -500,6 +540,7 @@ code {
   .wizard-header,
   .panel-header,
   .section-header,
+  .setup-banner,
   .secret-row,
   .log-row,
   .check-row,
